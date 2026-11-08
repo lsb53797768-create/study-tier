@@ -1,0 +1,26 @@
+# Supabase 무료 프로젝트는 1주일 동안 요청이 없으면 일시정지됩니다.
+# 3일마다 서버에 가벼운 요청(ping)을 보내 깨어 있게 합니다. (공개 저장소에서는 무료)
+name: Supabase 깨우기
+
+on:
+  schedule:
+    - cron: '17 3 */3 * *'   # 3일마다 (한국 시간 낮 12시 17분 무렵)
+  workflow_dispatch:          # Actions 탭에서 수동 실행 가능
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: 서버 깨우기
+        run: |
+          URL=$(grep -oP "SUPABASE_URL:\s*'\K[^']+" js/config.js || true)
+          KEY=$(grep -oP "SUPABASE_KEY:\s*'\K[^']+" js/config.js || true)
+          if [ -z "$URL" ] || [ -z "$KEY" ]; then
+            echo "js/config.js 에 서버 주소가 없어 건너뜁니다 (체험 모드)."
+            exit 0
+          fi
+          curl -fsS -X POST "$URL/rest/v1/rpc/ping" \
+            -H "apikey: $KEY" -H "Content-Type: application/json" -d '{}'
+          echo
+          echo "서버가 깨어 있습니다."
